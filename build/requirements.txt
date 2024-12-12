@@ -1,7 +1,7 @@
 shyaml==0.6.2
 yamale==4.0.4
 prettytable==3.5.0
-cryptography==3.4.8
+cryptography==38.0.0
 
 # transitive dependencies for shyaml
 pyyaml==5.4.1
