@@ -9,7 +9,7 @@ pyyaml==5.4.1
 PyGithub==1.55
 
 ## transitive dependencies for python-gitlab
-######certifi==2022.6.15
+certifi==2022.6.15
 #charset-normalizer==2.1.1
 #click==8.1.3
 #idna==3.4
