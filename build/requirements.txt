@@ -6,7 +6,7 @@ cryptography==38.0.0
 # transitive dependencies for shyaml
 pyyaml==5.4.1
 
-######PyGithub==1.55
+PyGithub==1.55
 
 ## transitive dependencies for python-gitlab
 ######certifi==2022.6.15
