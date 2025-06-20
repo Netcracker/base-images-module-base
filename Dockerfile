@@ -1,17 +1,16 @@
 #######################################
 # Stage 1 
-FROM alpine:3.16.2 as build
+FROM alpine:3.20 as build
 
 COPY build/sources.list /etc/apk/repositories
 RUN apk add --update --no-cache \
     gcc \
     curl \
     musl-dev \
-    python3-dev \
+    python3-dev=3.12.11-r0 \
     libffi-dev \
     openssl-dev \
     py3-pip
-
 
 COPY build/pip.conf /etc/pip.conf
 COPY build/constraint.txt /build/constraint.txt
@@ -27,14 +26,14 @@ RUN curl --retry 3 --retry-connrefused --retry-delay 5 -LO https://github.com/mo
 
 #######################################
 # Stage 2
-FROM alpine:3.16.2
+FROM alpine:3.20
 
 COPY build/pip.conf /etc/pip.conf
 COPY build/constraint.txt /build/constraint.txt
 
 COPY build/sources.list /etc/apk/repositories
 RUN apk add --no-cache \
-    python3-dev \
+    python3-dev=3.12.11-r0 \
     bash \
     ca-certificates \
     tar \
@@ -53,7 +52,6 @@ RUN addgroup ci && adduser -D -h /module/ -s /bin/bash -G ci ci && \
     chown ci:ci -R /module && \
     chmod 754 /module/scripts/* && \
     chmod +x /usr/local/bin/sops
-
 
 ENV PATH=/module/venv/bin:$PATH
 
