@@ -1,13 +1,13 @@
 #######################################
 # Stage 1 
-FROM alpine:3.20 as build
+FROM alpine:3.16.2 as build
 
 COPY build/sources.list /etc/apk/repositories
 RUN apk add --update --no-cache \
     gcc \
     curl \
     musl-dev \
-    python3-dev=3.12.11-r0 \
+    python3-dev \
     libffi-dev \
     openssl-dev \
     py3-pip
@@ -26,14 +26,14 @@ RUN curl --retry 3 --retry-connrefused --retry-delay 5 -LO https://github.com/mo
 
 #######################################
 # Stage 2
-FROM alpine:3.20
+FROM alpine:3.16.2
 
 COPY build/pip.conf /etc/pip.conf
 COPY build/constraint.txt /build/constraint.txt
 
 COPY build/sources.list /etc/apk/repositories
 RUN apk add --no-cache \
-    python3-dev=3.12.11-r0 \
+    python3-dev \
     bash \
     ca-certificates \
     tar \
