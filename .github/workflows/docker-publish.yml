@@ -5,7 +5,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: qubership-base-module-dockerimage
+  IMAGE_NAME: netcracker/qubership-base-module-dockerimage
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
