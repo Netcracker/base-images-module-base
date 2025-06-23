@@ -1,0 +1,76 @@
+name: "Release: Base module docker image"
+
+run-name: "Release Base module docker image: ${{ inputs.version }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        default: '1.0.0'
+        type: string
+        description: 'Release version (e.g., 1.0.0)'
+      dry-run:
+        required: false
+        type: boolean
+        default: false
+        description: 'Dry run'
+      component:
+        default: '[
+                  {"name": "qubership-base-module-dockerimage", "file": "./Dockerfile", "context": "."}
+                ]'
+        description: 'component'
+        required: true
+
+jobs:
+  check-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Input parameters
+        run: |
+          echo "Version: ${{ github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if tag exists
+        id: check_tag
+        uses: netcracker/qubership-workflow-hub/actions/tag-checker@main
+        with:
+          tag: 'v${{ github.event.inputs.version }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Output result
+        run: |
+          echo "Tag exists: ${{ steps.check_tag.outputs.exists }}"
+          echo "Tag name: v${{ github.event.inputs.version }}"
+
+      - name: Fail if tag exists
+        if: steps.check_tag.outputs.exists == 'true'
+        run: |
+          echo "Tag already exists: v${{ github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "Tag already exists: v${{ github.event.inputs.version }}"
+          exit 1
+
+  tag:
+    needs: [check-tag]
+    uses: netcracker/qubership-workflow-hub/.github/workflows/tag-creator.yml@main
+    with:
+      tag-name: v${{ github.event.inputs.version }}
+
+  docker-build-publish:
+    needs: [tag]
+    uses: netcracker/qubership-workflow-hub/.github/workflows/docker-publish.yml@main
+    with:
+      ref: v${{ inputs.version }}
+      download-artifact: false
+      dry-run: ${{ inputs.dry-run }}
+      component: ${{ inputs.component }}
+
+  github-release:
+    needs: [tag]
+    uses: netcracker/qubership-workflow-hub/.github/workflows/release-drafter.yml@main
+    with:
+      version: ${{ github.event.inputs.version }}
+      publish: false
