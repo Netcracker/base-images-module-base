@@ -1,6 +1,6 @@
 #######################################
 # Stage 1 
-FROM alpine:3.16.2 as build
+FROM alpine:3.20 as build
 
 COPY build/sources.list /etc/apk/repositories
 RUN apk add --update --no-cache \
@@ -28,7 +28,7 @@ RUN curl --retry 3 --retry-connrefused --retry-delay 5 -LO https://github.com/mo
 
 #######################################
 # Stage 2
-FROM alpine:3.16.2
+FROM alpine:3.20
 
 COPY build/pip.conf /etc/pip.conf
 COPY build/constraint.txt /build/constraint.txt
