@@ -7,7 +7,7 @@ RUN apk add --update --no-cache \
     gcc \
     curl \
     musl-dev \
-    python3-dev \
+    python3-dev=3.12.11-r0 \
     libffi-dev \
     openssl-dev \
     py3-pip
@@ -35,7 +35,7 @@ COPY build/constraint.txt /build/constraint.txt
 
 COPY build/sources.list /etc/apk/repositories
 RUN apk add --no-cache \
-    python3-dev \
+    python3-dev=3.12.11-r0 \
     bash \
     ca-certificates \
     tar \
