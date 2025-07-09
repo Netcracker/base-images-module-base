@@ -1,62 +1,66 @@
 #######################################
-# Stage 1 
-FROM alpine:3.20 as build
+# Stage 1 - Build stage
+FROM python:3.12-alpine3.19 as build
 
-COPY build/sources.list /etc/apk/repositories
-RUN apk add --update --no-cache \
+# Install only essential build dependencies
+RUN apk add --no-cache \
     gcc \
-    curl \
     musl-dev \
-    python3-dev=3.12.11-r0 \
     libffi-dev \
-    openssl-dev \
-    py3-pip
+    openssl-dev
 
+# Copy pip configuration and requirements
 COPY build/pip.conf /etc/pip.conf
-COPY build/constraint.txt /build/constraint.txt
 COPY build/requirements.txt /build/requirements.txt
 
-RUN test -d /module/venv || python3 -m venv /module/venv
-RUN source /module/venv/bin/activate \
-    && pip install --upgrade pip setuptools \
-    && pip install --no-cache-dir -r /build/requirements.txt
-RUN curl --retry 3 --retry-connrefused --retry-delay 5 -LO https://github.com/mozilla/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64 && \
-    chmod +x sops-v3.9.0.linux.amd64 && \
-    mv sops-v3.9.0.linux.amd64 /usr/local/bin/sops
+# Create virtual environment and install Python packages
+RUN python -m venv /module/venv
+RUN /module/venv/bin/pip install --upgrade pip setuptools wheel
+RUN /module/venv/bin/pip install --no-cache-dir -r /build/requirements.txt
 
-
+# Download and install SOPS (BusyBox wget)
+RUN wget --tries=3 \
+    https://github.com/mozilla/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64 \
+    -O /usr/local/bin/sops && \
+    chmod +x /usr/local/bin/sops
 
 #######################################
-# Stage 2
-FROM alpine:3.20
+# Stage 2 - Runtime stage
+FROM python:3.12-alpine3.19
 
-COPY build/pip.conf /etc/pip.conf
-COPY build/constraint.txt /build/constraint.txt
-
-COPY build/sources.list /etc/apk/repositories
+# Install only runtime dependencies
 RUN apk add --no-cache \
-    python3-dev=3.12.11-r0 \
     bash \
     ca-certificates \
-    tar \
     curl \
     jq \
     yq \
     gettext \
-    sed \
     age
 
+# Copy virtual environment and SOPS from build stage
 COPY --from=build /module /module
 COPY --from=build /usr/local/bin/sops /usr/local/bin/sops
-COPY scripts /module/scripts
 
-RUN addgroup ci && adduser -D -h /module/ -s /bin/bash -G ci ci && \
-    chown ci:ci -R /module && \
-    chmod 754 /module/scripts/* && \
+# Copy only necessary scripts
+COPY scripts/ /module/scripts/
+
+# Create user and set permissions
+RUN addgroup -g 1000 ci && \
+    adduser -D -u 1000 -h /module/ -s /bin/bash -G ci ci && \
+    chown -R ci:ci /module && \
+    chmod 755 /module/scripts/* && \
     chmod +x /usr/local/bin/sops
 
-ENV PATH=/module/venv/bin:$PATH
+# Set environment
+ENV PATH=/module/venv/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
+# Switch to non-root user
 USER ci:ci
 WORKDIR /module/scripts
-#ENTRYPOINT ["/bin/bash", "-c"] # https://github.com/moby/moby/issues/3753
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import sys; sys.exit(0)" || exit 1
